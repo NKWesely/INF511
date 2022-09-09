@@ -6,4 +6,3 @@ library(faraway)
 # load some data in
 data(pima, package = "faraway")
 
-head(pima)
