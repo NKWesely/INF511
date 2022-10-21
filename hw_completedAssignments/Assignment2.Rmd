@@ -1,0 +1,167 @@
+---
+title: "INF 511 Assignment 2"
+author: "Jen Diehl (6179236), Sam Watson (6174574), Natasha Wesely (6180693)"
+date: "2022-09-16"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+options(knitr.kable.NaN = '')
+```
+
+## Question 1
+### (a)
+
+```{r Question 1a}
+sapflow.df<-  readRDS(file="sapflow.rds")
+str(sapflow.df)
+```
+V2 seems to be a binary variable that would most likely take on a binomial distribution because there are only two options.
+
+### (b)
+```{r Question 1b}
+names(sapflow.df) = c("light","fertilizer","temperature","moisture","sapflow")
+head(sapflow.df)
+```
+
+### (c)
+```{r Question 1c}
+sapflow.df$light = factor(sapflow.df$light, labels = c("lo","hi"))
+head(sapflow.df)
+str(sapflow.df)
+```
+
+### (d)
+```{r Question 1d}
+pairs(sapflow.df)
+```
+
+The pairs function reports the factors as their numeric value of 1 or 2.
+
+### (e)
+A single histogram may not be enough to assess if sapflow is normally distributed because it is just a visual assessment of normality which is inherently subjective. Creating a histogram is not formally or statistically assessing normality.
+
+## Question 2
+
+### (a)
+```{r Question 2a}
+X<- model.matrix(sapflow ~ light + fertilizer + temperature + moisture, data=sapflow.df)
+y<- sapflow.df$sapflow
+```
+
+E(Y$_1$ | x$_1$) = ${\beta}_0$ * X$_{1,0}$ + ${\beta}_1$ * X$_{1,1}$ + ${\beta}_2$ * X$_{1,2}$ + ${\beta}_3$ * X$_{1,3}$ + ${\beta}_4$ * X$_{1,4}$
+
+E(Y$_1$ | x$_1$) = ${\beta}_0$ * 1 + ${\beta}_1$ * 0 + ${\beta}_2$ * 1 + ${\beta}_3$ * 0 + ${\beta}_4$ * 1
+
+E(Y$_1$ | x$_1$) = ${\beta}_0$ + ${\beta}_2$ + ${\beta}_4$
+
+
+### (b)
+
+E(Y$_5$ | x$_5$) = ${\beta}_0$ * X$_{5,0}$ + ${\beta}_1$ * X$_{5,1}$ + ${\beta}_2$ * X$_{5,2}$ + ${\beta}_3$ * X$_{5,3}$ + ${\beta}_4$ * X$_{5,4}$
+
+E(Y$_5$ | x$_5$) = ${\beta}_0$ * 1 + ${\beta}_1$ * 0 + ${\beta}_2$ * 1 + ${\beta}_3$ * 1 + ${\beta}_4$ * 1
+
+E(Y$_5$ | x$_5$) = ${\beta}_0$ + ${\beta}_2$ + ${\beta}_3$ + ${\beta}_4$
+
+E (Y$_5$ | x$_5$) - E(Y$_1$ | x$_1$) = ${\beta}_0$ + ${\beta}_2$ + ${\beta}_3$ + ${\beta}_4$ - ${\beta}_0$ - ${\beta}_2$ - ${\beta}_4$
+
+E (Y$_5$ | x$_5$) - E(Y$_1$ | x$_1$)  = ${\beta}_3$
+
+The difference mean sapflow between high and low temperature and other inputs is equal to ${\beta}_3$.
+
+### (c)
+```{r Question 2c}
+model = lm(sapflow ~ light + fertilizer + temperature + moisture, data = sapflow.df)
+summary(model)
+```
+The model tells us that when moving from low to high temperature there is a 43.92 mL/h increase in sapflow.
+
+### (d)
+#### i.
+$\hat{\beta}_3$ = 43.92
+
+#### ii.
+SE $\hat{\beta}_3$ = 13.17
+
+#### iii.
+t-value $\hat{\beta}_3$ = 3.334
+
+#### iv.
+11 degrees of freedom
+
+#### v.
+p-value = 0.006660
+
+#### vi.
+Yes, the effect of temperature is statistically significant because the t-value is far into the tails of the t distribution, therefore the p-value is small and less than alpha. 
+
+### (e)
+```{r Question 2e}
+xtxi = solve(t(X) %*% X)
+betahat = xtxi %*% t(X) %*% y
+betahat
+coef(model)
+```
+The beta hats are very similar from the manual calculations and the model created with lm.
+
+### (f)
+```{r Question 2f}
+S = t(X)%*%X
+Xinv = solve(S)
+H = X %*% Xinv %*% t(X)
+H
+```
+
+### (g)
+```{r Question 2g}
+yhat = H%*%y
+yhat
+fitted(model)
+all(round(yhat - fitted(model), 10)==0)
+```
+Yes, the yhats calculated from the matrix-vector computations match the yhats from the model created with lm().
+
+### (h)
+```{r Question 2h}
+resids = y-yhat
+all(round(resids - residuals(model), 10)==0)
+```
+Yes, the residuals from the matrix-vector computation match the residuals from the model created with lm().
+
+### (i)
+```{r Question 2i}
+sd(resids)
+```
+From the model the residual standard error: 26.35 
+
+The standard deviation of errors from our matrix-vector computation is slightly different from the model made with lm(). The difference in the estimates is reasonable considering there are only 16 observations.
+
+### (j)
+```{r Question 2j}
+xtxi <- solve(t(X) %*% X)
+varHat = sum(((y-yhat)^2) / 11 )
+varB = xtxi * varHat
+all(round(varB - vcov(model), 10)==0)
+```
+
+Yes, our matrix computation of $Var(\hat{\beta})$ is the same as vcov(model).
+
+```{r}
+sigHat = sqrt(varHat)
+(seHatB3 = sqrt(diag(xtxi)) * sigHat)[4]
+
+summary(model)$coefficients[4,2]
+```
+
+Yes, the matrix computation of the $\hat{se}(\hat{\beta_{3}})$ matches the $\hat{se}(\hat{\beta_{3}})$ from the lm() object.
+
+### (k)
+```{r Question 2k}
+(R2 = cor(y, yhat)^2)
+summary(model)$r.squared
+```
+
+Yes, our computed value of R2 agrees with the output from our previously computed lm() model.

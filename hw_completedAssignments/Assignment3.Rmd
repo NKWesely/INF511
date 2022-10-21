@@ -1,0 +1,105 @@
+---
+title: "INF 511 Assignment 3"
+author: "Jen Diehl (6179236), Sam Watson (6174574), Natasha Wesely (6180693)"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+options(knitr.kable.NaN = '')
+```
+
+
+```{r Set Up}
+hw3.df<- readRDS(file="hw3.df.RDS")
+plot(log(H/PD) ~ x, data=hw3.df, pch=as.numeric(HVI),
+      xlab=expression("Daily Maximum Temperature" ~ (x[i])),
+      ylab=expression("Hospitalization Rate" ~ (log(H[i]/PD[i]))))
+legend("topleft", legend=c("high", "med", "low"), pch=c(3,2,1),title="HVI Group")
+```
+
+## Question 1
+
+```{r Q1}
+lmod <- lm(log(H/PD)~I(x-30)+I((x-30)^2)+HVI ,data = hw3.df)
+summary(lmod)
+```
+
+## Question 2 
+```{r Q2}
+summary(lmod)$r.squared
+```
+The proportion of variability of log hospitalization rate is 0.8995752 explained by the association of temperature and HVI.
+
+## Question 3
+The intercept from this model output is around -16. If we were to draw a line for the data on the plot above the intercept is also around -16. In the model we have shifted the y-axis to the right where 30 now equals 0 (or where the 20 is on the above plot). Therefore, it is appropriate to infer about the intercept from the model.
+
+## Question 4
+### i
+H$_0$: y = $\beta_{0}$ + $\beta_{1}$ * (Temperature - 30) + $\beta_{2}$ * (Temperature - 30)$^2$
+
+H$_a$: y = $\beta_{0}$ + $\beta_{1}$ * (Temperature - 30) + $\beta_{2}$ * (Temperature - 30)$^2$ + $\beta_{3}$  * HVIM + $\beta_{4}$ * HVIH
+
+```{r Q4}
+lmod2 <- lm(log(H/PD)~I(x-30)+I((x-30)^2) ,data = hw3.df)
+summary(lmod2)
+modanova <- anova(lmod, lmod2)
+anova(lmod, lmod2)
+```
+### ii
+The F statistic is 24.847.
+
+### iii
+The p-value is 1.487e-08.
+
+### iv
+We can reject our null hypothesis that the reduced model is sufficient because our p-value is less than 0.05.
+
+## Question 5
+### i
+There are 5 parameters in the full model.
+
+### ii
+There are 3 parameters in the reduced model.
+
+### iii
+For the full model DF is 59 and the reduced model DF is 61.
+
+### iv
+
+```{r Q5 iv}
+pval = 1 - pf(modanova$F[2],
+              df1 = modanova$Res.Df[1], 
+              df2 = modanova$Res.Df[2])
+print(pval)
+```
+The p-value is very small number and R is rounding to zero.
+
+## Question 6
+
+```{r Q6}
+b4hat = summary(lmod)$coefficients[5,1]
+seB4hat = summary(lmod)$coefficients[5,2]
+tcrit = qt(0.95, df = 59)
+
+(CIlower = b4hat - (tcrit*seB4hat))
+```
+
+We are 95% confident the mean effect of high HVI (relative to low HVI) is at least 0.8692906 (or greater).  
+
+## Question 7
+H$_0$: $\beta_{4}$ = 0
+
+H$_a$: $\beta_{4}$ > 0 
+
+```{r}
+b4hat = summary(lmod)$coefficients[5,1]
+seB4hat = summary(lmod)$coefficients[5,2]
+
+testStat = (b4hat - 0) / seB4hat
+(pval = 1 - pt(testStat, df = 59))
+```
+
+The test statistic is far into the right tail of the t distribution (test stat t-value = 7.027036), and p-value is close to zero (1.217393e-09). Therefore, we can reject the null hypothesis (that there is no effect of high HVI). The effect of high HVI is significantly greater than zero. 

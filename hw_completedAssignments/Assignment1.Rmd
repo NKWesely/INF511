@@ -1,0 +1,147 @@
+---
+title: "INF 511 Assignment 1"
+author: "Jen Diehl (6179236), Sam Watson (6174574), Natasha Wesely (6180693)"
+date: "2022-09-06"
+output: html_document
+---
+
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+options(knitr.kable.NaN = '')
+```
+
+## Question 1
+
+```{r Question 1 Chunk}
+
+set.seed(24601)
+(myvec<- round(rnorm(n=30), digits=1))
+#(a)
+sum(myvec)
+#(b)
+prod(myvec)
+#(c) 
+myvec^2
+#(d) 
+exp(-myvec)
+#(e) 
+log(myvec)
+# Problem is can't compute the natural log of a negative element
+#(f) 
+log10(myvec)
+#(g) Compute the average, variance, standard deviation, median and the three quartiles of the of the elements in the vector. (2 points)
+mean(myvec)
+var(myvec)
+sd(myvec)
+median(myvec)
+quantile(myvec, probs=c(.25,.50,.75))
+```
+
+## Question 2
+```{r Question 2 Chunk}
+curve(expr = dnorm, from = -3.5, to = 3.5, ylab = "Probability", xlab = "Z", main = "Standard Normal Distribution")
+```
+
+## Question 3
+```{r Question 3 Chunk}
+theta = 2.576
+pnorm(theta)
+```
+
+## Question 4
+```{r Question 4 Chunk}
+qnorm(0.995)
+```
+
+## Question 5
+```{r Question 5 Chunk}
+plot(0:10, binprobs<- dbinom(0:10,size=7,p=0.75),
+ylab="f(y)", xlab="y", type="h",
+pch=20, main="f(y)=P(Y=y)\n binom(n=7,p=0.75)", ylim=c(0,1))
+```
+
+## Question 6
+```{r Question 6 Chunk}
+pbinom(q = 2 ,size = 7, prob = 0.75, lower.tail = F) + dbinom(2,size = 7, prob = 0.75)
+
+```
+
+## Question 7 
+```{r Question 7 Chunk, warning=FALSE, error=F, message=F}
+pbinom(q =1.5 ,size = 7, prob = 0.75, lower.tail = F) + dbinom(1.5,size = 7, prob = 0.75)
+```
+
+## Question 8
+Mean:
+5 + $\mu_{1}$ + 2$\mu_{2}$
+Covariance: 
+0 because they are independent variables.
+Variance:
+$\sigma_{1}^{2}$ + 4$\sigma_{2}^{2}$
+It is normally distributed.
+
+## Question 9
+
+```{r Question 9 Chunk}
+set.seed(5551212)
+(A<- matrix(round(rnorm(n=8,sd=3)),nrow=2,ncol=4, byrow=TRUE))
+(B<- matrix(round(rnorm(n=4,sd=3)),nrow=1,ncol=4))
+(C<- matrix(round(rnorm(n=8,sd=3)),nrow=2,ncol=4, byrow=TRUE))
+#a)
+A[2,2]
+#b)
+matrix(A[,2])
+#c)
+(D <- A +C); dim(D)
+#d)
+(E <- A - C); dim(E)
+#e)
+(F<-A%*%t(B)); dim(F)
+#f)
+(G<-A%*%t(C)); dim(G)
+#g)
+(H <- t(C)%*%A); dim(H)
+```
+h)
+A%*%C
+Error in A %*% C : non-conformable arguments
+It doesn't work because the columns of the first matrix and rows of the second matrix must be the same size.
+
+## Question 10
+
+```{r Question 10 Chunk}
+set.seed(sum(c(90620,5150)))
+X<- matrix(c(rep(1,6),round(runif(n=6,min=0,max=10))), ncol=2)
+Y <- 4.5 + 1.5*X[,2,drop=FALSE] + round(rnorm(6),2)
+ord<- order(Y)
+(X<- X[ord,])
+(Y<- Y[ord,,drop=FALSE])
+#a)
+(A<-t(X)%*%Y)
+#b)
+(B <- t(X)%*%X)
+#c)
+(Binv <- solve(B))
+#d)
+round(Binv%*%B,2)
+#e)
+Binv%*%A
+#f)
+#Answer to problem D is symmetric because it is the identity matrix.
+
+# g)
+model = lm(Y ~ X[,2])
+summary(model)
+print("The intercept (B0) = 3.057 and the slope (B1) = 1.763")
+
+# h)
+# Var(B) = (XtX)−1XtVar(y)X(XtX)−1
+varY = 0.3992
+varB = Binv%*%t(X)%*%X%*%Binv*varY
+sqrt(diag(varB))
+summary(model)$coefficients
+print("The parameter variances computed by hand are also identical to the parameter standard errors from the linear model (created with lm()).")
+
+```
+

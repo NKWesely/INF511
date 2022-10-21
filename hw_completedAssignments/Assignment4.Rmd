@@ -1,0 +1,222 @@
+---
+title: "INF 511 Assignment 4"
+author: "Jen Diehl (6179236), Sam Watson (6174574), Natasha Wesely (6180693)"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+options(knitr.kable.NaN = '')
+library(gmodels)
+```
+
+
+```{r Set Up}
+longjump_df<- readRDS(file="longjump.RDS")
+```
+
+## Question 1
+### a)
+```{r Q1a}
+lmod <- lm(Dist~ RStr + LStr + RFlex + LFlex ,data = longjump_df)
+summary(lmod)
+```
+
+H$_0$: There is no collective effect of right leg strength (pounds), left leg strength (pounds), right hamstring flexibility (inches) and left hamstring flexibility (inches) in the high school boys on distance of long jump.
+
+H$_a$: There is a collective effect of right leg strength (pounds), left leg strength (pounds), right hamstring flexibility (inches) and left hamstring flexibility (inches) in the high school boys on distance of long jump.
+
+The p-value is 0.004925 which is less than alpha, indicating that there is a significant collective effect of all covariates on long jump distance. 
+
+### b)
+
+We cannot infer a causal effect of covariates on the response because this is observational data that we are assessing statistical trends in, rather than a manipulative experiment where you are explicitly controlling treatments.
+
+### c)
+
+We shouldn't be able to infer an association of covariates with the response beyond the sample subjects because that would be interpolating outside of our observed data which is never a good idea.
+
+### d)
+
+```{r Q1d}
+lmod_2 <- lm(Dist ~ 1, data = longjump_df)
+anova(lmod, lmod_2)
+```
+
+The p-value is 0.004925 which is less than alpha so we know our more complex model is significantly different from our reduced model. The difference in sums of squares indicates that the reduced model is worse and therefore we should use the full model.
+
+### e)
+
+```{r Q1e}
+#Difference in the number of variables in each model 
+R = 5- 1
+Cmat = cbind(0,diag(R))
+d = rep(0,R)
+glh.test(reg = lmod, Cmat, d=d)
+```
+
+When using glh.test we get the same p-value and F statistic as when using anova.
+
+### f)
+
+H$_0$: The right and left leg strength have the same effect on (mean) distance jumped.
+
+$\beta_{1}$ = $\beta{2}$
+
+H$_a$: The right and left leg strength have different effects on (mean) distance jumped.
+
+$\beta_{1}$ != $\beta{2}$
+
+
+```{r Q1f Dif Leg strength}
+
+legStrMod = lm(Dist~ I(RStr + LStr) + RFlex + LFlex , data = longjump_df)
+anova(lmod, legStrMod)
+
+```
+
+Because there is a high p-value (0.8644), we cannot reject the null hypothesis, meaning we cannot definitively say that the effects are not the same. Therefore, the leg strengths are likely equal. 
+The units for the difference in right and left leg strength are pounds. 
+
+
+### g)
+```{r Q1g}
+estimable(lmod, cm=c(0,1,-1,0,0), conf.int = 0.95)
+```
+We are 95% confident the mean difference of effects (between right and left leg strength) is between -0.03580247	and 0.03071565. 
+
+### h)
+
+H$_0$: The right and left leg hamstring flexibility have the same effect on (mean) distance jumped.
+
+$\beta_{3}$ = $\beta{4}$
+
+H$_a$: The right and left leg hamstring flexibility have different effects on (mean) distance jumped.
+
+$\beta_{3}$ != $\beta{4}$
+
+```{r Q1h}
+legFlxMod = lm(Dist~ RStr + LStr + I(RFlex + LFlex) , data = longjump_df)
+anova(lmod, legFlxMod)
+
+estimable(lmod, cm=c(0,0,0,1,-1), conf.int = 0.95)
+```
+
+Similar to the test for leg strength difference, we have observed a high p-value (0.6645) from the test for leg flexibility difference. Because the p-value is high, we fail to reject our null hypothesis. Therefore, the effects of left and right hamstring leg flexibility is likely the same. 
+
+We are 95% confident the mean difference of effects (between right and left leg hamstring flexibility) is between -0.06097144	and 0.09055174.
+
+### i)
+
+```{r}
+# cBeta approach
+cmat = matrix(c(0,1,-1,0,0,
+                0,0,0,1,-1), 
+              byrow = T,
+              nrow = 2)
+d = c(0,0)
+gmodels::glh.test(lmod, cmat, d = d)
+
+# reduced vs full model approach
+symmMod = lm(Dist ~ I(RStr + LStr) + I(RFlex + LFlex), data = longjump_df)
+anova(lmod, symmMod)
+
+```
+
+Based on the $c\beta$ approach and the full vs reduced model approach above, we cannot reject the null hypothesis (because the p-value is quite large (0.8907)). The reduced model is not significantly different from the full model. Therefore we cannot reject the idea that the legs are symmetrical. 
+
+## Question 2
+
+```{r Q2}
+set.seed(8675309)
+nreps <- 5000
+
+fstats <- numeric(nreps)
+
+for (i in 1:nreps){
+  lmods <- lm(sample(Dist) ~  RStr + LStr + RFlex + LFlex ,data = longjump_df)
+  fstats[i] <- summary(lmods)$fstat[1]
+}
+
+mean(fstats> summary(lmod)$fstat[1])
+```
+
+The p-value from the permutation test (0.0046) is very similar to the p-value from the normal theory test (0.004925). This means that the permutation test supports the original hypothesis test conclusion that there is a collective effect of right leg strength (pounds), left leg strength (pounds), right hamstring flexibility (inches) and left hamstring flexibility (inches) on distance of long jump.  
+
+## Question 3
+```{r Q3}
+set.seed(5551212)
+nb <- 5000
+coefmat <- matrix(NA,nb,5) ## <-- to hold betastar vectors
+resids <- residuals(lmod) ## <-- residual vector epshat
+preds <- fitted(lmod) ## <-- fitted vector yhat
+for(i in 1:nb){
+  booty <- preds + sample(resids, rep=TRUE)
+  bmod <- update(lmod, booty ~.)
+  coefmat[i,] <- coef(bmod)
+}
+
+# rename the columns & convert to df for ease
+colnames(coefmat) <- c("Intercept",colnames(longjump_df[,2:5]))
+coefmat <- data.frame(coefmat)
+
+# get the difference in effects of right & left leg strength
+legStrDiff = coefmat[,2] - coefmat[,3]
+
+# 95% empirical CIs for difference in effects of right & left leg strength
+quantile(legStrDiff, probs = c(0.025,0.975))
+```
+
+For the difference in effects of right and left leg strength, the bootstrap confidence interval is (-0.02458337, 0.01881140). This means we are 95% confident the mean difference in effects is between -0.02458337 and 0.01881140. This bootstrap confidence interval is pretty similar to the normal theory confidence interval (-0.03580247, 0.03071565). The magnitude of difference between the bootstrap CI and normal theory CI is unsurprising given the small sample size. 
+
+
+```{r}
+# get the difference in effects of right & left leg hamstring flexibility
+legFlxDiff = coefmat[,4] - coefmat[,5]
+
+# 95% empirical CIs for difference in effects of right & left leg hamstring flexibility
+quantile(legFlxDiff, probs = c(0.025,0.975))
+```
+
+For the difference in effects of right and left leg hamstring flexibility, the bootstrap confidence interval is (-0.03408454, 0.06418265 ). This means we are 95% confident the mean difference in effects is between -0.03408454 and 0.06418265 . This bootstrap confidence interval is pretty similar to the normal theory confidence interval (-0.06097144, 0.09055174). The magnitude of difference between the bootstrap CI and normal theory CI is unsurprising given the small sample size. 
+
+## Question 4
+
+### a)
+
+```{r Bodyfat Data}
+library(faraway)
+data(fat,package="faraway")
+lmod_bf <- lm(brozek ~ age + weight + height + neck + chest +
+               abdom + hip + thigh + knee + ankle +
+               biceps + forearm + wrist, data=fat)
+```
+
+```{r Q4a}
+#E(Y |x0)
+x <- model.matrix(lmod_bf)
+(x0 <- apply(x,2,mean))
+(y0 <- sum(x0*coef(lmod_bf)))
+
+# 95% prediction interval for E(Y |x0)
+(est <- predict(lmod_bf,new=data.frame(t(x0)), interval="confidence", se.fit=TRUE))
+```
+
+We are 95% confident the mean expected value for brozek score (E(Y |x0)) is between 18.4436 and 19.43339.
+
+```{r Q4a Individ}
+(pred<- predict(lmod_bf,new=data.frame(t(x0)), interval="prediction", se.fit=TRUE))
+```
+
+For an individual Y|x0, we are 95% confident the mean brozek score is between 11.06669 and 26.8103.
+
+### b)
+
+A medical doctor should use a prediction interval because you don't know if that individual patient exhibits normal/average attributes. It would be safer to use the prediction interval.
+
+### c)
+
+An exercise science researcher would use the confidence interval to infer about the relationship of percent body fat to these characteristics because they are interested in the general trend in the population which is better represented by the confidence interval around the expected mean value of body fat and characteristics.
+
