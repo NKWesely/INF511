@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 **The data for this homework include standardized math test scores and expenditures for public secondary schools for each state in the US for the school year 1990-91.**
 
-**The overall goal is to develop a relationship math test score, as the response, and one or more of the remaining variables or transformations thereof. Your analysis must include the ollowing diagnostic items and perform appropriate remedial actions, including, possibly, the transformation of the response and or one or more of the covariates or adding/removing (transformations of) covariates.**
+**The overall goal is to develop a relationship math test score, as the response, and one or more of the remaining variables or transformations thereof. Your analysis must include the following diagnostic items and perform appropriate remedial actions, including, possibly, the transformation of the response and or one or more of the covariates or adding/removing (transformations of) covariates.**
 
 ```{r}
 test.df <- readRDS("hw_assignmentInstructions/test.RDS")
