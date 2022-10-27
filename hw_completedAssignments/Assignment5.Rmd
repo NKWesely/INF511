@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 **The overall goal is to develop a relationship math test score, as the response, and one or more of the remaining variables or transformations thereof. Your analysis must include the following diagnostic items and perform appropriate remedial actions, including, possibly, the transformation of the response and or one or more of the covariates or adding/removing (transformations of) covariates.**
 
 ```{r}
-test.df <- readRDS("hw_assignmentInstructions/test.RDS")
+test.df <- readRDS("/Users/natashawesely/Documents/GitHub/INF511/hw_assignmentInstructions/test.RDS")
 
 # explore the data 
 pairs(math ~ expend + salary + ratio + takers,
@@ -112,10 +112,44 @@ Great! The Shapiro-Wilks test above has a high p-value (0.5498), indicating that
 # (c) 
 **Check for and remediate as necessary large leverage points. (10 points)**
 
+From the residuals vs fitted values plot above, it looks like there are potentially some data points with high leverage. To formally test this, we need to calculate the "leverage" for each data point.
 
+```{r}
+# calc the leverage for each state
+hii <- hatvalues(lmod)
+
+# n = number of observations
+n = length(hii)
+
+# p = number of parameters in model
+p = 4
+
+# use the rule of thumb to define hcrit
+hcrit<- 2*p/n
+
+# which states have "high" leverage?
+which(hii > hcrit)
+```
+
+Based off the rule of thumb, it looks like California, Connecticut, and Utah all have relatively high leverage. 
 
 # (d) 
 **Check for and remediate as necessary outliers. (10 points)**
+
+```{r}
+# calc t-values for all the data points
+ti<- rstudent(lmod)
+# define a tcrit
+tcrit<- qt(1-0.05/2, length(ti) - 1 - p)
+# compare each data point's t-val to the tcrit
+which(ti > tcrit | ti < -tcrit)
+
+ti[which.max(abs(ti))]
+```
+
+
+It looks like Arkansas, Mississippi, Montana, North Dakota, and West Virginia are all possible outliers.
+
 # (e) 
 **Check for and remediate as necessary influential points. (10 points)**
 # (f) 
