@@ -1,0 +1,122 @@
+---
+title: "INF 511 HW 5"
+author: "Natasha Wesely (6180693)"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**The data for this homework include standardized math test scores and expenditures for public secondary schools for each state in the US for the school year 1990-91.**
+
+**The overall goal is to develop a relationship math test score, as the response, and one or more of the remaining variables or transformations thereof. Your analysis must include the ollowing diagnostic items and perform appropriate remedial actions, including, possibly, the transformation of the response and or one or more of the covariates or adding/removing (transformations of) covariates.**
+
+```{r}
+test.df <- readRDS("hw_assignmentInstructions/test.RDS")
+
+# explore the data 
+pairs(math ~ expend + salary + ratio + takers,
+      data=test.df,
+      panel=function(x,y,...)
+        text(x=x,y=y,labels=as.character(1:dim(test.df)[1]),...),
+      lower.panel=NULL,
+      cex=0.8)
+
+cor(test.df[,-5])
+```
+
+Based on the pairs plot and correlation table above, it looks like expend and salary and too highly positively correlated to be included in the same linear model. The variables expend and takers are also possibly too highly correlated to include in the same model, but we will investigate this further below.
+
+```{r}
+# choose between salary and expend
+# there are lots of ways of doing this, 
+# I'm simply comparing each variable's ability to explain the response on their own
+summary(lm(math ~ salary, data = test.df))$r.squared
+summary(lm(math ~ expend, data = test.df))$r.squared
+
+```
+
+It looks like "salary" has a possibly stronger relationship to with "math", therefore I will include "salary" in my mean model, and exclude "expend."
+
+
+Next, I need to consider if each predictor exhibits a linear relationship with the response. From the pairs plot above, it looks like "math" and "takers" clearly has a nonlinear relationship. The other predictors I am considering including in my mean model ("salary" and "ratio") do not look like they have an obvious nonlinear relationship with the response. I will try to transform the "takers" data so that it shows a linear relationship with "math." 
+
+```{r}
+# create a new column with the log of takers
+test.df$takers.log = log(test.df$takers)
+
+plot(test.df$takers.log, test.df$math)
+```
+
+Log transforming the "takers" variable seems to have successfully changed the relationship between "takers" and "math" so I will include the log tranformed "takers" variable in my mean model.
+
+
+```{r}
+# make a linear model
+lmod = lm(math ~ ratio + salary + takers.log, data = test.df)
+summary(lmod)
+```
+
+
+# (a) 
+**Check and remediate as necessary the constant variance assumption for model errors. (10 points)**
+
+The model looks good so far, so let's continue checking model assumption. I want to check for heteroscedasticity but first plotting the residuals vs the fitted values, and then by doing a formal stat test.
+
+```{r}
+# plot residuals vs fitted values
+library(ggplot2, quietly = T)
+autoplot(lmod, which=1)
+```
+
+This residuals vs fitted values plot does not show an obvious violation of the constant variance assumption. There is no fan type pattern or curve. This is good! Next I will do formal stat tests to check for heteroscedasticity.
+
+```{r}
+# # what does a Brown–Forsythe (BF) Test (Modified Levene Test) indicate?
+# library(stats, quietly = T)
+# var.test(residuals(lmod))
+# var.test(math ~ ratio + salary + takers.log, data = test.df)
+# 
+# library(car)
+# leveneTest(math ~ ratio + salary + takers.log, data = test.df)
+# leveneTest(lmod)
+
+# what does the Breusch-Pagan (BP) (aka Cook-Weisberg) test indicate?
+lmtest::bptest(lmod, studentize=TRUE)
+```
+
+From the studentized Breusch-Pagan test above, the p-value is high (0.1774) therefore I cannot reject the null hypothesis that homoscedasticity is present. Because I cannot definitively say there is not homoscedasticity, I can move on. There is not obvious heteroscedasticity, so I should be fine.
+
+# (b) 
+**Check and remediate as necessary the normality assumption. (10 points)**
+
+To check for residual normality, I first want to simply make a histogram of the residuals to visually inspect normatliy.
+
+```{r}
+hist(residuals(lmod), breaks = 20)
+```
+
+This histogram looks fairly normal. There are some bumps, but that is not surprising given the moderate sample size.
+
+Next I will formally test for normality using the Shapiro-Wilks test.
+
+```{r}
+shapiro.test(residuals(lmod))
+```
+
+Great! The Shapiro-Wilks test above has a high p-value (0.5498), indicating that I cannot reject my null hypothesis that there is normality. Because I cannot definitively say there is not normality, I can move on. There is not obvious non-normality in the residuals, so I should be fine.
+
+
+# (c) 
+**Check for and remediate as necessary large leverage points. (10 points)**
+
+
+
+# (d) 
+**Check for and remediate as necessary outliers. (10 points)**
+# (e) 
+**Check for and remediate as necessary influential points. (10 points)**
+# (f) 
+**Check and remediate as necessary the appropriateness of the mean model, i.e., for the structure of the relationship between the response and the covariates. And, revisit previous diagnostics. (10 points)**
