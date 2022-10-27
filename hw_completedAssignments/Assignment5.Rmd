@@ -69,9 +69,15 @@ The model looks good so far, so let's continue checking model assumption. I want
 # plot residuals vs fitted values
 library(ggplot2, quietly = T)
 autoplot(lmod, which=1)
+
+dataframe$predictions = predict(lmod)
+
+plot(predict(lmod), residuals(lmod))
 ```
 
 This residuals vs fitted values plot does not show an obvious violation of the constant variance assumption. There is no fan type pattern or curve. This is good! Next I will do formal stat tests to check for heteroscedasticity.
+
+# ASK about bf.test() & bptest()
 
 ```{r}
 # # what does a Brown–Forsythe (BF) Test (Modified Levene Test) indicate?
@@ -82,6 +88,8 @@ This residuals vs fitted values plot does not show an obvious violation of the c
 # library(car)
 # leveneTest(math ~ ratio + salary + takers.log, data = test.df)
 # leveneTest(lmod)
+
+bf.test()
 
 # what does the Breusch-Pagan (BP) (aka Cook-Weisberg) test indicate?
 lmtest::bptest(lmod, studentize=TRUE)
@@ -152,5 +160,9 @@ It looks like Arkansas, Mississippi, Montana, North Dakota, and West Virginia ar
 
 # (e) 
 **Check for and remediate as necessary influential points. (10 points)**
+
+
+
 # (f) 
 **Check and remediate as necessary the appropriateness of the mean model, i.e., for the structure of the relationship between the response and the covariates. And, revisit previous diagnostics. (10 points)**
+
