@@ -37,7 +37,7 @@ summary(lm(math ~ salary, data = test.df))$r.squared
 summary(lm(math ~ expend, data = test.df))$r.squared
 ```
 
-It looks like "salary" has a possibly stronger relationship with "math", therefore I will include "salary" in my mean model, and exclude "expend."
+It looks like "salary" has a possibly stronger relationship with "math", therefore I will include "salary" in my mean model, and exclude "expend." There are many other ways I could have picked between "salary" and "expend," like what kind of the questions the scientist wants to answer. Here I am using a very simple metric to decided which variable to include, but I could have done many different things.
 
 
 Next, I need to consider if each predictor exhibits a linear relationship with the response. From the pairs plot above, it looks like "math" and "takers" do not have a linear relationship. The other predictors I am considering including in my mean model ("salary" and "ratio") do not look like they have an obvious nonlinear relationship with the response. I will try to transform the "takers" data so that it shows a linear relationship with "math." 
@@ -207,7 +207,7 @@ savD <- cooks.distance(lmod)
 # define a cut off value using the F distb
 infcuts<-qf(p=c(0.1,0.2),df1=p, df2=n-p)
 
-# What are the 5 most influencital points?
+# What are the 5 most influential points?
 tail(sort(savD), n=5)
 ```
 
@@ -251,9 +251,35 @@ This looks good to me! There is nothing wonky in the observations vs predictions
 
 The structure of the relationship between the response and the covariates seems reasonable to me. This indicates the mean model is appropriate. 
 
-For ease, I will print out the summary of my linear model again.
+
+I also want to check to see if we "really" need each of the predictors.
 
 ```{r}
-summary(lmod)
+# fit linear models 
+lmod_minRatio = lm(math ~ salary + takers.log, data = test.df)
+lmod_minSalary = lm(math ~ ratio + takers.log, data = test.df)
+lmod_minLogTakers = lm(math ~ ratio + salary, data = test.df)
+
+anova(lmod, lmod_minRatio)
+anova(lmod, lmod_minSalary)
+anova(lmod, lmod_minLogTakers)
+
+drop1(lmod)
 ```
+
+Looks like "ratio" is not doing much for this linear model.
+
+I want to drop it from the model.
+```{r}
+
+plot(lmod_minRatio)
+```
+
+
+After I dropped "ratio" from the mean model, the plots above demonstrate that the variance of the residuals looks contsatnt (from the fitted values vs residuals plot), the 
+
+
+
+partial residual plots
+anova of full & reduced models 
 
