@@ -27,7 +27,7 @@ pairs(math ~ expend + salary + ratio + takers,
 cor(test.df[,-5])
 ```
 
-Based on the pairs plot and correlation table above, it looks like expend and salary and too highly positively correlated to be included in the same linear model. The variables expend and takers are also possibly too highly correlated to include in the same model, but we will investigate this further below.
+Based on the pairs plot and correlation table above, it looks like "expend" and "salary" and too highly positively correlated to be included in the same linear model. The variables "expend" and "takers" are also possibly too highly correlated to include in the same model, but we will investigate this further below.
 
 ```{r}
 # choose between salary and expend
@@ -51,12 +51,36 @@ plot(test.df$takers.log, test.df$math, col = "blue")
 
 Log transforming the "takers" variable seems to have successfully changed the relationship between "takers" and "math" so I will include the log transformed "takers" variable in my mean model. 
 
-Next I will make my linear model and then investigate potential issues.
 
+Next, I want to assess if we really "need" all three predictors ("ratio", "salary", and the log of "takers") in the model. I will assess this using two methods. First, I will do an ANOVA for each of the reduced models to compare it to the full model. Then I will use the drop1() function to try removing one variable at a time and see how that affects the model's AIC.
 
 ```{r}
-# make a linear model
-lmod = lm(math ~ ratio + salary + takers.log, data = test.df)
+# make the "full" linear model
+lmod_full = lm(math ~ ratio + salary + takers.log, data = test.df)
+
+# fit the "reduced" linear models 
+lmod_minRatio = lm(math ~ salary + takers.log, data = test.df)
+lmod_minSalary = lm(math ~ ratio + takers.log, data = test.df)
+lmod_minLogTakers = lm(math ~ ratio + salary, data = test.df)
+
+# assess how different the each reduced model is from the full model 
+anova(lmod_full, lmod_minRatio)
+anova(lmod_full, lmod_minSalary)
+anova(lmod_full, lmod_minLogTakers)
+
+# try dropping one variable at a time and see how the AIC changes
+drop1(lmod_full)
+```
+
+Doing ANOVAs for each of the reduced models revealed that removing the predictor "ratio" did not significantly change the model (p-value = 0.4381). This is also reflected in the output of the drop1() function, which showed that by removing the predictor "ratio" the AIC was reduced (i.e., the AIC got better). This indicates that I don't really "need" the "ratio" predictor, so I will exclude it from my model moving forward.
+
+In contrast to "ratio," both of the other two predictors ("salary" and the log of "takers") seem to be important to the model. This is indicated by the low p-values in the ANOVAs and the increased AICs from the drop1() output.
+
+
+Now I will fit my linear model and then investigate potential assumption issues.
+
+```{r}
+lmod = lm(math ~ salary + takers.log, data = test.df)
 summary(lmod)
 ```
 
@@ -81,7 +105,7 @@ This residuals vs fitted values plot above does not show an obvious violation of
 # # what does a Brown–Forsythe (BF) Test (Modified Levene Test) indicate?
 # library(stats, quietly = T)
 # var.test(residuals(lmod))
-# var.test(math ~ ratio + salary + takers.log, data = test.df)
+# var.test(mxath ~ ratio + salary + takers.log, data = test.df)
 # 
 # library(car)
 # leveneTest(math ~ ratio + salary + takers.log, data = test.df)
@@ -93,7 +117,7 @@ This residuals vs fitted values plot above does not show an obvious violation of
 lmtest::bptest(lmod, studentize=TRUE)
 ```
 
-From the studentized Breusch-Pagan test above, the p-value is high (0.1774) therefore I cannot reject the null hypothesis that homoscedasticity is present. This is good! Because I cannot definitively say there is not homoscedasticity, I can move on. There is not obvious heteroscedasticity, so I should be fine.
+From the studentized Breusch-Pagan test above, the p-value (0.06434) greater than alpha (0.05), therefore I cannot reject the null hypothesis that homoscedasticity is present. This is good! Because I cannot definitively say there is not homoscedasticity, I can move on. There is not obvious heteroscedasticity, so I should be fine.
 
 # (b) 
 **Check and remediate as necessary the normality assumption. (10 points)**
@@ -112,7 +136,7 @@ Next, I will formally test for normality using the Shapiro-Wilks test.
 shapiro.test(residuals(lmod))
 ```
 
-Great! The Shapiro-Wilks test above has a high p-value (0.5498), indicating that I cannot reject my null hypothesis that there is normality. This is good! Because I cannot definitively say there is not normality, I can move on. There is not obvious non-normality in the residuals, so I should be fine.
+Great! The Shapiro-Wilks test above has a high p-value (0.6023), indicating that I cannot reject my null hypothesis that there is normality. This is good! Because I cannot definitively say there is not normality, I can move on. There is not obvious non-normality in the residuals, so I should be fine.
 
 
 # (c) 
@@ -143,16 +167,12 @@ plot(hii,
      type="b",
      pch=4,
      xlab="Case Index (i)",
-     ylab=expression(h[i][i]))
+     ylab=expression(h[i][i]),
+     ylim = c(0,0.2))
 abline(h=hcrit,lty=2, col = "red")
-text(x=which(hii > hcrit),
-     y=hii[which(hii > hcrit)],
-     labels=which(hii > hcrit), 
-     pos=2,
-     col = "red")
 ```
 
-Based off the rule of thumb, it looks like California, Connecticut, and Utah all have relatively high leverage. Utah has the most extreme leverage. If any of these three data points with high leverage end up being outliers or influential points, I will consider dropping them. But for now, I will move on.
+Based off the rule of thumb, it looks I have no data points that have relatively high leverage. This is good, I can move on.
 
 # (d) 
 **Check for and remediate as necessary outliers. (10 points)**
@@ -192,9 +212,8 @@ abline(h=c(-tcrit2, tcrit2), lty=3, col = "blue")
 ```
 
 
-It looks like Arkansas, Mississippi, Montana, North Dakota, and West Virginia are all possible outliers. All of these potential outliers are right on the line of the traditional tcrit values (~2 & -2) (blue lines in plot above). West Virginia is the most extreme outlier with a t-value of -2.4, which is still pretty close to the traditional tcrit value of 2.  Given a sample size of 50, I would expect ~2.5 observations to be outside of the traditional "tcrit" range (blue lines) just by random chance. Even though there are more than that (5 datapoints beyond the traditional tcrit range), all of them are very close to the traditional tcrit values, and none of them outside (or near) the Bonferroni corrected tcrit values (red lines above). Therefore I am not concerned about these data points being problematic outliers. So I can move on.
+It looks like Arkansas, Mississippi, Montana, North Dakota, and West Virginia are all possible outliers. All of these potential outliers are right on the line of the traditional tcrit values (about 2 & about -2) (blue lines in plot above). Arkansas is the most extreme outlier with a t-value of -2.343656, which is still pretty close to the traditional tcrit value of 2. Given a sample size of 50, I would expect ~2.5 observations to be outside of the traditional "tcrit" range (blue lines) just by random chance. Even though there are more than that (5 data points beyond the traditional tcrit range), all of them are fairly close to the traditional tcrit values, and none of them are outside (or near) the Bonferroni corrected tcrit values (red lines above). Therefore I am not concerned about these data points being problematic outliers. So I can move on.
 
-Also, none of the data points with high leverage (California, Connecticut, and Utah) are also outliers.
 
 # (e) 
 **Check for and remediate as necessary influential points. (10 points)**
@@ -205,14 +224,13 @@ Also, none of the data points with high leverage (California, Connecticut, and U
 savD <- cooks.distance(lmod)
 
 # define a cut off value using the F distb
-infcuts<-qf(p=c(0.1,0.2),df1=p, df2=n-p)
+infcuts <-qf(p=c(0.1,0.2),df1=p, df2=n-p)
 
 # What are the 5 most influential points?
 tail(sort(savD), n=5)
 ```
 
 ```{r}
-
 plot(savD, 
      type="b",
      ylim = c(0,0.45),
@@ -222,22 +240,22 @@ plot(savD,
 abline(h=infcuts, lty=3, col = "red")
 ```
 
-None of the data points have a large enough Cook's distance to cross the "cut-offs" (red lines) in the plot above. This means that none of the data points are overly influential. The five most influential points are (1) North Dakota, (2) Mississippi, (3) Arkansas, (4) West Virginia, and (5) Montana. This is unsurprising because these 5 points are also my borderline outliers, and outliers generally have the potential to be influential on a model. Interestingly, none of the points with high leverage are particularly influential points. 
+None of the data points have a large enough Cook's distance to cross the "cut-offs" (red lines) in the plot above. This means that none of the data points are overly influential. The five most influential points are (1) Mississippi, (2) North Dakota, (3) Arkansas, (4) Montana, and (5) New Hampshire. This is unsurprising because these four of these points are also my borderline outliers, and outliers generally have the potential to be influential on a model.
 
-Even though Montana, West Virginia, Arkansas, Mississippi, and North Dakota are both borderline outliers and the top 5 most influential data points, I am not going to drop them from the data set/model because they are not extreme outliers (i.e. they are not outside the Bonferroni corrected thresholds) and they are not highly influential points (i.e. they are not above the cut-offs). So I can move on with my model. 
+Even though Montana, Arkansas, Mississippi, and North Dakota are both borderline outliers and among the most influential data points, I am not going to drop them from the data set/model because they are not extreme outliers (i.e. they are not outside the Bonferroni corrected thresholds) and they are not highly influential points (i.e. they are not above the cut-offs). So I can move on with my model. 
 
 # (f) 
 **Check and remediate as necessary the appropriateness of the mean model, i.e., for the structure of the relationship between the response and the covariates. And, revisit previous diagnostics. (10 points)**
 
-I assessed this at the start of this homework as well. Let's double check that the structure of the relationship between the response and each covariate ("ratio", "salary", and the log of "takers") is linear.
+I assessed this at the start of this homework as well. Let's double check that the structure of the relationship between the response and each covariate ("salary" and the log of "takers") is linear.
 
 ```{r}
-plot(test.df[, c(2,3,5,6)])
+plot(test.df[, c(3,5,6)])
 ```
 
 While these relationships could look more linear in a perfect world, none of the relationship are obviously nonlinear. So I think this is okay.
 
-Let's also look at the observations vs the predictions to get an idea of how different the two are.
+I also want to look at the observations vs the predictions.
 
 ```{r}
 plot(x = test.df$math,
@@ -251,35 +269,30 @@ This looks good to me! There is nothing wonky in the observations vs predictions
 
 The structure of the relationship between the response and the covariates seems reasonable to me. This indicates the mean model is appropriate. 
 
-
-I also want to check to see if we "really" need each of the predictors.
+I also want to double check to see if we "really" need each of the predictors.
 
 ```{r}
 # fit linear models 
-lmod_minRatio = lm(math ~ salary + takers.log, data = test.df)
-lmod_minSalary = lm(math ~ ratio + takers.log, data = test.df)
-lmod_minLogTakers = lm(math ~ ratio + salary, data = test.df)
+lmod_minSalary = lm(math ~ takers.log, data = test.df)
+lmod_minLogTakers = lm(math ~ salary, data = test.df)
 
-anova(lmod, lmod_minRatio)
 anova(lmod, lmod_minSalary)
 anova(lmod, lmod_minLogTakers)
 
 drop1(lmod)
 ```
 
-Looks like "ratio" is not doing much for this linear model.
+This looks good. The above code output indicates that I "need" both the "salary" and log of "takers" predictors. This mean model is appropriate. 
 
-I want to drop it from the model.
+Finally, I want to look at some partial residual plots.
+
 ```{r}
-
-plot(lmod_minRatio)
+termplot(lmod, partial.resid=TRUE)
 ```
 
+The partial residual plots above look fine. In an ideal world, they would be more perfect, but given the small sample size I am not surprised to see less than ideal partial residual plots. I think this mean model is appropriate overall. I will reprint the summary of my final model for ease.
 
-After I dropped "ratio" from the mean model, the plots above demonstrate that the variance of the residuals looks contsatnt (from the fitted values vs residuals plot), the 
-
-
-
-partial residual plots
-anova of full & reduced models 
+```{r}
+summary(lmod)
+```
 
