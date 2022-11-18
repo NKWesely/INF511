@@ -49,6 +49,7 @@ Diet is recognized as a factor.
 # Question 6
 **It seems reasonable to have the Control level be the reference level, at least for the factor effects model with reference treatment coding. Use the relevel function in R to make the Control level the reference level. Make this change to the Diet factor, keeping remaining levels in their same relative order. (We will use treatment coding, shortly.) Be sure to use the so releveled Diet factor throughout the remainder of this homework; replacing the existing Diet factor in the data frame will help to ensure this. Show your code and output to convince me that you’ve reordered the levels as requested. (3 points)**
 
+
 ```{r}
 # Use the relevel function in R to make the Control level the reference level
 df$Diet <- relevel(df$Diet, ref = "Control")
@@ -57,7 +58,7 @@ df$Diet <- relevel(df$Diet, ref = "Control")
 contrasts(df$Diet)
 ```
 
-You can tell that the reordering was successful because when I run the contrasts() function, it shows "Control" as the top level.
+You can tell that the reordering was successful because when I run the contrasts() function, it shows "Control" as the top level (row).
 
 # Question 7
 **Create a scatter plot (dot plot) of concentration level (vertical) by factor level. We did this in our notes with a convenient function in R. Show your code and plot. (5 points)**
@@ -76,7 +77,7 @@ df %>%
 
 # Question 8
 ## 8.a
-**Compute a one-way ANOVA (i.e., one-factor linear model) using the cell means model and test for (“overall”) equality of factor level means (α = 0.05). Be sure to state null and alternative hypotheses, report a test statistic, p-value and state your conclusions. In particular, what are the null and alternative hypotheses in terms of Cβ? Etc. You may use stats::anova or gmodels::glh.test, as in our notes. (Remember, by default, R reports results that are not likely of interest when using the cell means model. You’ll have to fix this as we did in our notes.) Also, show your code and output. (10 points)**
+**Compute a one-way ANOVA (i.e., one-factor linear model) using the cell means model and test for (“overall”) equality of factor level means (alpha = 0.05). Be sure to state null and alternative hypotheses, report a test statistic, p-value and state your conclusions. In particular, what are the null and alternative hypotheses in terms of CBeta? Etc. You may use stats::anova or gmodels::glh.test, as in our notes. (Remember, by default, R reports results that are not likely of interest when using the cell means model. You’ll have to fix this as we did in our notes.) Also, show your code and output. (10 points)**
 
 ```{r}
 # create the model
@@ -102,13 +103,17 @@ $H_{0}$: The mean effect of diets are all equal.
 $\mu_{A}$ = $\mu_{B}$ = $\mu_{C}$ = $\mu_{D}$ = $\mu_{E}$
 
 
+
 $H_{a}$: The mean effects of the different diets are not all equal.
 
 Not all $\mu_{j}$ are equal
 
+
 Test Statistic: $F$ = 4.7652
 
+
 P-value: 0.003643
+
 
 Conclusions: Because the p-value (0.003643) is less than alpha (0.05), I can reject the null hypothesis. Therefore, the mean effect of all the different diets are NOT the same.
 
@@ -123,7 +128,9 @@ coef(model)
 **It seems plausible that our fellow researchers may have wanted to compare the control group to the remaining groups. Using the cell means model, compare the mean of the control group with the average of the means in the remaining groups. In particular, construct a 95% confidence interval for the difference between the mean concentration of the control group and the average of the mean concentrations of the remaining groups. Report your code/output and summarize your interval very briefly. (10 points)**
 
 ```{r}
-# construct a 95% confidence interval for the difference between the mean concentration of the control group and the average of the mean concentrations of the remaining groups.
+# construct a 95% confidence interval for the difference between the mean 
+# concentration of the control group and the average of the mean 
+# concentrations of the remaining groups.
 TukeyHSD(aov(Conc ~ Diet, df))
 ```
 
@@ -156,23 +163,27 @@ attr(df$Diet, which='contrasts')
 **Repeat 8a, above, now using the factor effects model with sum-to-zero coding. Be sure to report your (new) C matrix. (Note: R’s default behavior should be what we want now that we do not omit the overall constant (“intercept”) from our model. That is, its overall F test and R2 are more likely to be of interest. Still, report a C matrix and use stats::anova or gmodels::glh.test as in 8a, above.) (10 points)**
 
 ```{r}
-model_sum0 = lm(Conc ~ Diet, data = df)
-summary(model_sum0)
+model_effectSum0 = lm(Conc ~ Diet, data = df)
+summary(model_effectSum0)
 ```
 
 ```{r}
 # compare the reduced & full (sum to zero constrained effects model)
-anova(modelReduced, model_sum0)
+anova(modelReduced, model_effectSum0)
 ```
 
 ```{r}
 # report a C matrix
-Cmat = matrix(c(0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1, 0,
+(Cmat = matrix(c(0, 1, 0, 0, 0, 0,
+                0, 0, 1, 0, 0, 0,
+                0, 0, 0, 1, 0, 0,
                 0, 0, 0, 0, 1, 0,
                 0, 0, 0, 0, 0, 1)
-              , ncol=6, byrow=TRUE)
+              , ncol=6, byrow=TRUE))
+
+# use gmodels with C matrix to make sure you get the same results
+d<- rep(0,nrow(Cmat))
+gmodels::glh.test(model_effectSum0, cm=Cmat, d=d)
 ```
 
 
@@ -181,20 +192,133 @@ $H_{0}$: The effect of diets are all equal.
 $\alpha_{A}$ = $\alpha_{B}$ = $\alpha_{C}$ = $\alpha_{D}$ = $\alpha_{E}$
 
 
+
 $H_{a}$: The effects of the different diets are not all equal.
 
 Not all $\alpha_{j}$ are equal
 
+
+C Matrix:
+
+     [,1] [,2] [,3] [,4] [,5] [,6]
+[1,]    0    1    0    0    0    0
+
+[2,]    0    0    1    0    0    0
+
+[3,]    0    0    0    1    0    0
+
+[4,]    0    0    0    0    1    0
+
+[5,]    0    0    0    0    0    1
+
+
+
 Test Statistic: $F$ = 4.7652
+
 
 P-value: 0.003643
 
-Conclusions: Because the p-value (0.003643) is less than alpha (0.05), I can reject the null hypothesis. Therefore, the mean effect of all the different diets are NOT the same.
+
+Conclusions: Because the p-value (0.003643) is less than alpha (0.05), I can reject the null hypothesis. Therefore, the effects (alphas) of all the different diets are NOT the same.
+
+## 9.c
+**Repeat 8b, above, now using the factor effects model with sum-to-zero coding. In particular, I want beta hats for the factor effects model with sum-to-zero coding, of course! (Be sure to compute alpha hats, too!) ALSO, compute  compare these a values with the estimated means computed using the cell means model in 8b, above. (5 points)**
+
+############ ASK!!!!!!!!!!!!!!!
+How to compute alpha hats 
+
+```{r}
+# beta hats for effects model with sum to zero constraints
+coef(model_effectSum0)
+```
+## 9.d
+**Repeat 8c, above, now using the factor effects model with sum-to-zero coding. (10 points)**
+
+############ ASK!!!!!!!!!!!!!!!
+
+```{r}
+# compute 95% CIs for the difference in effects between the concentration 
+# of the control group and the concentrations of the remaining groups.
+TukeyHSD(aov(model_effectSum0))
+```
+
+# Question 10
+## 10.a
+**Change to the factor effects model with (reference) treatment coding, with the control group as the reference level. Report code/output to convince me that you have done this correctly. (5 points)**
+
+```{r}
+# re-read in the data
+df = readRDS(file='hw_assignmentInstructions/hw6.rds')
+
+# Use the relevel function in R to make the Control level the reference level
+df$Diet <- relevel(df$Diet, ref = "Control")
+
+# convince me that you’ve reordered the levels as requested
+contrasts(df$Diet)
+```
+
+## 10.b
+**Repeat 8a, above, now using the factor effects model with treatment coding. Be sure to report your (new) C matrix. (Note: R’s default behavior should be what we want now that we do not omit the overall constant from our model. Still, report a C matrix and use stats::anova or gmodels::glh.test as in 8a, above.) (10 points)**
+
+```{r}
+# fit a new effect model with treatment group coding
+model_effectTreatment = lm(Conc ~ Diet, data = df)
+
+# compare the reduced & full model 
+anova(modelReduced, model_effectTreatment)
+```
+
+
+$H_{0}$: The effect of diets are all equal.
+
+$\alpha_{A}$ = $\alpha_{B}$ = $\alpha_{C}$ = $\alpha_{D}$ = $\alpha_{E}$
 
 
 
+$H_{a}$: The effects of the different diets are not all equal.
+
+Not all $\alpha_{j}$ are equal
+
+
+C Matrix: ???????????????????????????
+
+     [,1] [,2] [,3] [,4] [,5] [,6]
+[1,]    0    1    0    0    0    0
+
+[2,]    0    0    1    0    0    0
+
+[3,]    0    0    0    1    0    0
+
+[4,]    0    0    0    0    1    0
+
+[5,]    0    0    0    0    0    1
 
 
 
+Test Statistic: $F$ = 4.7652
 
+
+P-value: 0.003643
+
+
+Conclusions: Because the p-value (0.003643) is less than alpha (0.05), I can reject the null hypothesis. Therefore, the effects (alphas) of all the different diets are NOT the same.
+
+## 10.c
+**Repeat 8b, above, now using the factor effects model with treatment coding. In particular, I want beta hats for the factor effects model with treatment coding, of course! (Be sure to give alpha1 hat, too!) ALSO, compute mu + alpha_i hat , i = 1, . . . , a; compare these alpha values with the estimated means computed using the cell means model in 8b, above. (5 points)**
+
+```{r}
+# beta hats for effect model with treatment coding
+coef(model_effectTreatment)
+
+coef(model)
+```
+
+
+## 10.d 
+**Repeat 8c, above, now using the factor effects model with treatment coding. (10 points)**
+```{r}
+# compute 95% CIs for the difference in effects between the concentration 
+# of the control group and the concentrations of the remaining groups.
+
+```
 
