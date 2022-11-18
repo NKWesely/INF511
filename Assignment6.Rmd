@@ -1,0 +1,200 @@
+---
+title: "INF 511 Assignment 6"
+author: "Natasha Wesely"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+*The data for this homework were obtained from a randomized experiment to estimate the effect of a diet (Diet) on the concentration of a substance (Conc) in the blood of participants (no units given). (This is similar to the diet example in our notes.) The data are contained in the file hw6.rds in BbLearn and are shown in the table, below. We will conduct analyses of these data using the cell means model and the factor effects models with reference treatment coding and sum-to-zero coding. Use readRDS(file=‘hw6.rds’) to read the data frame into R.*
+
+# Question 1
+**What is the factor in this experiment? (1 point)**
+
+Diet
+
+# Question 2
+**Give at least one other name for a factor. (1 point)**
+
+Categorical variable
+
+# Question 3
+**What are the levels of the factor? (1 point)**
+
+A, B, C, D, and E
+
+The levels of a factor are the different versions/types of the categorical variable.
+
+# Question 4
+**What are the treatments? (1 point)**
+
+In this experiment, the treatments are Diet A, Diet B, Diet C, Diet D, and Diet E. Treatments are the different unique levels of the factor.
+
+# Question 5
+**Make sure the Diet variable is seen as a factor variable by R. (2 points)**
+
+```{r}
+# read in the data
+df = readRDS(file='hw_assignmentInstructions/hw6.rds')
+
+# check to make sure the Diet variable is seen as a factor 
+str(df)
+```
+
+Diet is recognized as a factor. 
+
+# Question 6
+**It seems reasonable to have the Control level be the reference level, at least for the factor effects model with reference treatment coding. Use the relevel function in R to make the Control level the reference level. Make this change to the Diet factor, keeping remaining levels in their same relative order. (We will use treatment coding, shortly.) Be sure to use the so releveled Diet factor throughout the remainder of this homework; replacing the existing Diet factor in the data frame will help to ensure this. Show your code and output to convince me that you’ve reordered the levels as requested. (3 points)**
+
+```{r}
+# Use the relevel function in R to make the Control level the reference level
+df$Diet <- relevel(df$Diet, ref = "Control")
+
+# convince me that you’ve reordered the levels as requested
+contrasts(df$Diet)
+```
+
+You can tell that the reordering was successful because when I run the contrasts() function, it shows "Control" as the top level.
+
+# Question 7
+**Create a scatter plot (dot plot) of concentration level (vertical) by factor level. We did this in our notes with a convenient function in R. Show your code and plot. (5 points)**
+
+```{r}
+library(tidyverse, quietly = T)
+
+df %>%
+  ggplot()+
+  geom_dotplot(aes(
+    x = Diet,
+    y = Conc,
+    fill = Diet),
+    binaxis = "y")
+```
+
+# Question 8
+## 8.a
+**Compute a one-way ANOVA (i.e., one-factor linear model) using the cell means model and test for (“overall”) equality of factor level means (α = 0.05). Be sure to state null and alternative hypotheses, report a test statistic, p-value and state your conclusions. In particular, what are the null and alternative hypotheses in terms of Cβ? Etc. You may use stats::anova or gmodels::glh.test, as in our notes. (Remember, by default, R reports results that are not likely of interest when using the cell means model. You’ll have to fix this as we did in our notes.) Also, show your code and output. (10 points)**
+
+```{r}
+# create the model
+# add the "- 1" to the formula to ensure we are doing a cell means model
+model = lm(Conc ~ Diet - 1, data = df)
+
+summary(model)
+```
+
+```{r}
+# get an overall F test stat by explicitly fitting a contant
+# mean model that does not restrict that constant to be zero
+# then use or Full vs Reduced (F v R) approach
+
+modelReduced = lm(Conc ~ 1, data = df)
+
+anova(modelReduced, model)
+```
+
+
+$H_{0}$: The mean effect of diets are all equal.
+
+$\mu_{A}$ = $\mu_{B}$ = $\mu_{C}$ = $\mu_{D}$ = $\mu_{E}$
+
+
+$H_{a}$: The mean effects of the different diets are not all equal.
+
+Not all $\mu_{j}$ are equal
+
+Test Statistic: $F$ = 4.7652
+
+P-value: 0.003643
+
+Conclusions: Because the p-value (0.003643) is less than alpha (0.05), I can reject the null hypothesis. Therefore, the mean effect of all the different diets are NOT the same.
+
+## 8.b
+**Report the factor level (i.e., treatment) estimated mean concentration** $\hat{\mu_{i}}$, $i = 1,...,a$ in $\hat{\beta}$ **(5 points)**
+
+```{r}
+coef(model)
+```
+
+## 8.c
+**It seems plausible that our fellow researchers may have wanted to compare the control group to the remaining groups. Using the cell means model, compare the mean of the control group with the average of the means in the remaining groups. In particular, construct a 95% confidence interval for the difference between the mean concentration of the control group and the average of the mean concentrations of the remaining groups. Report your code/output and summarize your interval very briefly. (10 points)**
+
+```{r}
+# construct a 95% confidence interval for the difference between the mean concentration of the control group and the average of the mean concentrations of the remaining groups.
+TukeyHSD(aov(Conc ~ Diet, df))
+```
+
+I am 95% confident the mean difference between Diet A group and the control is somewhere between -47.29565 and 20.3623186. 
+
+Similarly, I am 95% confident the mean difference between Diet B group and the control is between -73.62899 and -5.9710148, meaning the people in the Diet B group have 6-74 units less of the concentration of a substance (Conc) in their blood compared to the control group.
+
+I am 95% confident the mean difference between Diet C group and the control is between -67.2956 and 0.3623186.
+
+I am 95% confident the mean difference between Diet D group and the control is between -51.29565 and 16.3623186.
+
+I am 95% confident the mean difference between Diet E group and the control is between -66.29565 and 1.3623186.
+
+# Question 9
+## 9.a
+**Change to the factor effects model with sum-to-zero coding and report code/output to convince me that you have done this. (5 points)**
+
+```{r}
+# Any contrasts set for the particular diet factor?
+attr(df$Diet, which='contrasts') # no
+# shows _global_ setting if no local  contrast attribute
+contrasts(df$Diet)
+# change coding/contraints/contrasts
+contrasts(df$Diet) <- contr.sum(levels(df$Diet))
+# check to make sure the local settings changed
+attr(df$Diet, which='contrasts')
+```
+
+## 9.b
+**Repeat 8a, above, now using the factor effects model with sum-to-zero coding. Be sure to report your (new) C matrix. (Note: R’s default behavior should be what we want now that we do not omit the overall constant (“intercept”) from our model. That is, its overall F test and R2 are more likely to be of interest. Still, report a C matrix and use stats::anova or gmodels::glh.test as in 8a, above.) (10 points)**
+
+```{r}
+model_sum0 = lm(Conc ~ Diet, data = df)
+summary(model_sum0)
+```
+
+```{r}
+# compare the reduced & full (sum to zero constrained effects model)
+anova(modelReduced, model_sum0)
+```
+
+```{r}
+# report a C matrix
+Cmat = matrix(c(0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1, 0,
+                0, 0, 0, 0, 1, 0,
+                0, 0, 0, 0, 0, 1)
+              , ncol=6, byrow=TRUE)
+```
+
+
+$H_{0}$: The effect of diets are all equal.
+
+$\alpha_{A}$ = $\alpha_{B}$ = $\alpha_{C}$ = $\alpha_{D}$ = $\alpha_{E}$
+
+
+$H_{a}$: The effects of the different diets are not all equal.
+
+Not all $\alpha_{j}$ are equal
+
+Test Statistic: $F$ = 4.7652
+
+P-value: 0.003643
+
+Conclusions: Because the p-value (0.003643) is less than alpha (0.05), I can reject the null hypothesis. Therefore, the mean effect of all the different diets are NOT the same.
+
+
+
+
+
+
+
+
