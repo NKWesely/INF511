@@ -131,18 +131,21 @@ coef(model_cellMn)
 # construct a 95% confidence interval for the difference between the mean 
 # concentration of the control group and the average of the mean 
 # concentrations of the remaining groups.
-TukeyHSD(aov(model_cellMn))
+
+# using cBeta approach
+# control group is the reference, so first position = 1
+Cmat = rbind("Control v Others" = c(5,-1,-1,-1,-1,-1)/5)
+
+gmodels::estimable(obj=model_cellMn, 
+                   cm= Cmat, 
+                   beta0=0,
+                   conf.int=0.95, 
+                   show.beta0=FALSE)
 ```
 
-I am 95% confident the mean difference in substance concentration between Diet A group and the control is somewhere between -47.29565 and 20.3623186. 
+I am 95% confident the mean difference in substance concentration between the treatment groups and the control group is between 14.29606	and 40.37061. 
 
-Similarly, I am 95% confident the mean difference between Diet B group and the control is between -73.62899 and -5.9710148, meaning the people in the Diet B group have 6-74 units less of the concentration of a substance (Conc) in their blood compared to the control group.
 
-I am 95% confident the mean difference between Diet C group and the control is between -67.2956 and 0.3623186.
-
-I am 95% confident the mean difference between Diet D group and the control is between -51.29565 and 16.3623186.
-
-I am 95% confident the mean difference between Diet E group and the control is between -66.29565 and 1.3623186.
 
 # Question 9
 ## 9.a
@@ -279,20 +282,24 @@ My $\hat{\mu + \alpha_{i}}$ from my effect model (with sum to zero constraint) m
 ## 9.d
 **Repeat 8c, above, now using the factor effects model with sum-to-zero coding. (10 points)**
 
-############ ASK!!!!!!!!!!!!!!!
-
 ```{r}
-# compute 95% CIs for the difference in effects between the concentration 
+# compute 95% CI for the difference in effects between the concentration 
 # of the control group and the concentrations of the remaining groups.
-TukeyHSD(aov(model_effectSum0))
+
+# using cBeta approach
+# control level is second position, all others = 0
+Cmat = rbind("Control v Others" = c(0,6/5,0,0,0,0))
+
+gmodels::estimable(obj = model_effectSum0, 
+                   cm = Cmat, 
+                   beta0 = 0,
+                   conf.int = 0.95, 
+                   show.beta0 = FALSE)
 ```
 
 # Question 10
 ## 10.a
 **Change to the factor effects model with (reference) treatment coding, with the control group as the reference level. Report code/output to convince me that you have done this correctly. (5 points)**
-
-# ASK!!!!!!!!!!
-so is the alpha1 = 0 for control? or diet A?
 
 ```{r}
 # re-read in the data
@@ -322,14 +329,12 @@ $H_{0}$: The effect of diets are all equal.
 $\alpha_{A}$ = $\alpha_{B}$ = $\alpha_{C}$ = $\alpha_{D}$ = $\alpha_{E}$
 
 
-
 $H_{a}$: The effects of the different diets are not all equal.
 
 Not all $\alpha_{j}$ are equal
 
 
-C Matrix: ???????????????????????????
-ASK !!!!!!!!!!!!!!!
+C Matrix: 
 
 [,1] [,2] [,3] [,4] [,5] [,6]
 [1,]    0    1    0    0    0    0
@@ -416,11 +421,19 @@ My $\hat{\mu + \alpha_{i}}$ from my effect model (with treatment constraint) mat
 ## 10.d 
 **Repeat 8c, above, now using the factor effects model with treatment coding. (10 points)**
 
-# ASK !!!!!!!!!!!!
-
 ```{r}
 # compute 95% CIs for the difference in effects between the concentration 
 # of the control group and the concentrations of the remaining groups.
 
+# using cBeta approach
+# control group is the reference level, so first position = 0
+# all other treatment groups have equal effect 
+Cmat = rbind("Control v Others" = c(0,-1,-1,-1,-1,-1)/5)
+
+gmodels::estimable(obj = model_effectTreatment, 
+                   cm = Cmat, 
+                   beta0 = 0,
+                   conf.int = 0.95, 
+                   show.beta0 = FALSE)
 ```
 
