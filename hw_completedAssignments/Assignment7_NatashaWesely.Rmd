@@ -1,0 +1,88 @@
+---
+title: "INF 511 Assignment 7"
+author: "Natasha Wesely (6180693)"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 7.1.1 Data & LS Fit
+```{r}
+zfat<- readRDS(file="zfat.RDS")
+zfat.lm<- lm(brozek ~ ., data=zfat)
+```
+
+# 7.2 Common Improper Prior Analysis
+*Following C.6.2, produce a posterior summary of the regression model effects (the betas!) and a corresponding plot of the marginal posterior t distributions for these effects as in that section. Add line color (use the col option in the plot and lines functions) in the same fashion as the lty option to help distinguish effect marginal distributions. You may have to perform further edits to the plot code of C.6.2 to get reasonable results here. For example, horizontal and vertical plot limits must be changed as well as effect names in the plot legend! Incidentally, you will want to keep some objects created here for comparison to Gibbs sampling and HMC sampling of subsequent analyses. Show your summary and plot, including the code used to produce these. Be concise. Do not include more than requested here.*
+
+# 7.3 Combination Improper/Proper Independence Prior Analysis: Gibbs
+## 7.3.1 Eliciting a Prior
+*Following C.9, we first elicit priors for the effects, excluding Beta0 and sigma2, which are given the same improper priors of that section. Because the output/response is not on the log scale, as in the prostate example, we will consider it unlikely that the standardized covariates will change the mean body fat percentage by more than 50 percent (not 10 or log(10)) as the covariates change over their standardized range of [0,1]. This means that we believe the (absolute value of the) effects are unlikely to be more than 50. Assuming, a priori, normality and mean effects of 0 (a priori null effects), as in C.9, this translates to a prior variance of V = (50/1.96)2 for the effects. (Given the results of the previous analysis, above, you might question this prior! Why? No need to answer this.)*
+
+## 7.3.2 Gibbs Sampling Algorithm
+*With above prior distribution, I repeat the 3-stage Gibbs sampling algorithm of C.9.3, where the full conditional distribution parameters are as discussed in C.9. (I correct an error in starting value notation, too.)* 
+
+## 7.3.3 Starting Values
+*Determining starting values (“the first link”) in a Gibbs sampling chain (as in Markov chain Monte Carlo (MCMC)) is somewhat of an art. (We may say “initial values” or “starting values.”) The instructions here for determining starting values are not beyond the realm of what is done in practice to obtain starting values. Generally speaking, we want to create “dispersed” starting values so that, hopefully, we see all of these “far-flung” starting value links converge to a common range of values, with all chains mixing among each other, which provides a necessary (not sufficient) condition for convergence to the posterior distribution. (Creating starting values that are somehow too far out in the tails of the posterior distribution may cause the algorithm to fail due to very small likelihood values or prior density/mass values creating numerical problems. Not here.)*
+
+### (2)
+*For sigma^2, use the three starting values of sigma^2/10, sigma2, and 10sigma2, where sigma2 is the MSE from the zfat.lm object created in code above—the LS fit to the fat data with covariates mapped to [0,1]. Show the three starting values and the code used to produce them.*
+
+### (3)
+*You will also need three starting values for the intercept, Beta0. For these three values, generate Beta0 ∼ N(Beta0,sigma22(0)/n), one for each of the three starting values for sigma22, just mentioned, generically denoted as sigma2(0). (Note that N(Beta0Hat, sigma2(0)/n) is akin to the full conditional for Beta0, but not exactly the same. Again, determining starting values is much an art.) Please use set.seed(8675309 + 86011) immediately before generating the first of these three Beta0(0) starting values, with the second and third starting values generated before any other random number generation. Show the three starting values and the code used to produce them.*
+
+## 7.3.4 Algorithm Code
+### (4)
+*(4) Continuing to follow C.9.4, show the (remainder of the) Gibbs sampling code that you will run to produce samples from the posterior distribution. Just report the code for the moment. Are there any changes that you made to the code?*
+
+## 7.3.5 Convergence Diagnostics
+### (5)
+*Run the above code (you may need to get the mvtnorm package first) to obtain samples from the posterior distribution, and follow C.9.5 to obtain history (trace) plots and the Brooks-Gelman-Rubin (BGR) potential scale reduction factor (psrf) (graphically or numerically) to assess convergence. Omit the density plots, please. Report your code and results and comment briefly on convergence. (You may need to modify slightly the code from C.9.5 for this item.)*
+
+## 7.3.6 Posterior Summary
+### (6)
+*Following C.9.6, report the standard summary of the posterior, omitting the first 5000 iterations from each chain. Just give the code and summary results, do not use all of the code/results shown in C.9.6. We will compare these results to those of the other analyses herein, later. No need to comment yet.*
+
+# 7.4 Combination Improper/Proper Independence Prior Analysis: Stan HMC
+### (7)
+*Using code in C.10.8, use HMC in Stan to sample Beta, sigma2 | y. Please omit (or comment out) all code for sampling x^start Beta|y and Y∗ |x∗,y; we will not do this here. Be sure to change the prior standard deviation code in the transformed data block! Show your code.*
+
+### (8) 
+*Create the data list necessary to run your Stan code. Just show your code to create the data list that you will pass to Stan, shortly.*
+
+### (9) 
+*We will let Stan generate starting values for us (i.e., don’t follow C.10.12). Using C.10.13, execute your Stan model with three chains, 10000 iterations for each chain, and 5000 warmup iterations for each chain. Again, we do not obtain samples of x∗tBeta | y or Y ∗ | x∗, y in this homework, so modify the code accordingly. (And, we let Stan obtain starting values for us—fingers crossed.) Add seed = 90210 to the list of arguments in the sampling function. Show your code, but do not show the output yet. Don’t forget to translate Stan (to C++) then compile to an executable model; see C.10.9 and C.10.10.*
+
+## 7.4.1 Convergence Diagnostics
+### (10) 
+*Following C.10.14, obtain history (trace) plots and the Brooks-Gelman-Rubin (BGR) potential scale reduction factor (psrf) (graphically or numerically) to assess conver- gence. Omit the density plots, please. Report your code and results and comment briefly on convergence. (You may need to modify slightly the code from C.10.14 for this item.)*
+
+## 7.4.2 Posterior Summary
+### (11)
+*Following C.10.15, report the standard summary of the posterior, omitting the first 5000 iterations from each chain. Just give the code and summary results, do not use all of the code/results shown in C.10.15. We will compare these results to those of the other analyses herein, later. No need to comment yet.*
+
+# 7.5 Body Fat Summary
+### (12)
+*Following C.11, recreate the figure there, now for the three analyses of the body fat data done in this homework. You have to change some indicies in the code in order to create the figure correctly for the 13 effects here, not including the intercept and not including sigma2. Instead of different line types, use solid line colors black, red and green (use the col argument with values 1, 2 and 3). Mention two ways that you can see (if slightly) the effect of the non-informativeness of the improper prior analysis relative to the improper/proper combination prior analyses (refer to features in the plot, of course!).*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
